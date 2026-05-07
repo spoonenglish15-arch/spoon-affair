@@ -273,7 +273,16 @@ body{
 }
 .tutor-meta{flex:1;min-width:0;}
 .tutor-name{font-size:16px;font-weight:700;margin-bottom:3px;}
-.tutor-name-row{display:flex;align-items:center;gap:8px;min-width:0;}
+.tutor-name-row{display:flex;align-items:flex-start;gap:8px;}
+.tutor-name-text{
+  line-height:1.25;
+  white-space:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -ms-overflow-style:none;      /* IE/Edge legacy */
+  scrollbar-width:none;         /* Firefox */
+}
+.tutor-name-text::-webkit-scrollbar{display:none;} /* Chrome/Safari */
 .tutor-status-dot{
   width:10px;height:10px;border-radius:999px;flex:0 0 10px;
   border:1px solid #d1d5db;background:#e5e7eb;
@@ -1276,7 +1285,7 @@ function buildCard(tutor, open=false){
     <div class="tutor-card-header" onclick="toggleCard('${tutor.id}')">
       <div class="tutor-avatar">${avatarHtml}</div>
       <div class="tutor-meta">
-        <div class="tutor-name tutor-name-row"><span class="tutor-status-dot" aria-hidden="true"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nameLabel}</span></div>
+        <div class="tutor-name tutor-name-row"><span class="tutor-status-dot" aria-hidden="true"></span><span class="tutor-name-text">${nameLabel}</span></div>
         <div class="tutor-tags">${tutor.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}</div>
         ${bioHtml}
       </div>
