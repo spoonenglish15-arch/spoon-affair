@@ -336,6 +336,8 @@ body{
   height:auto;
   min-height:96px;
   overflow:hidden;
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 .res-field-label{font-size:12px;color:var(--ink2);margin:10px 0 6px;font-weight:600;}
 
@@ -1187,15 +1189,20 @@ function bindCard(id){
   const area = document.getElementById('av_area_'+id);
   const autoGrow = (el)=>{
     if(!el) return;
-    el.style.height = 'auto';
+    // Make it reliably grow on mobile as content changes.
+    el.style.height = '0px';
     el.style.height = `${el.scrollHeight}px`;
   };
 
   // keep long text readable for both tutor + member views
   if(area && area.tagName === 'TEXTAREA'){
     const grow = ()=>autoGrow(area);
+    // Run twice (now + next frame) to handle font/layout timing
     grow();
+    requestAnimationFrame(grow);
     area.addEventListener('input', grow);
+    area.addEventListener('change', grow);
+    area.addEventListener('focus', ()=>requestAnimationFrame(grow));
   }
 
   if(role === 'tutor'){
