@@ -273,6 +273,13 @@ body{
 }
 .tutor-meta{flex:1;min-width:0;}
 .tutor-name{font-size:16px;font-weight:700;margin-bottom:3px;}
+.tutor-name-row{display:flex;align-items:center;gap:8px;min-width:0;}
+.tutor-status-dot{
+  width:10px;height:10px;border-radius:999px;flex:0 0 10px;
+  border:1px solid #d1d5db;background:#e5e7eb;
+}
+.tutor-card.has-input .tutor-status-dot{border-color:#16a34a;background:#22c55e;}
+.tutor-card.has-input{border-color:#86efac;box-shadow:0 1px 0 rgba(34,197,94,.18) inset;}
 .country-suffix{font-size:0.6em;font-weight:600;color:var(--ink2);}
 .tutor-since{font-size:12px;color:var(--ink3);}
 .tutor-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
@@ -891,16 +898,23 @@ function ensureSharedListeners(){
         online: typeof v.online === 'string' ? v.online : '',
         datetime: typeof v.datetime === 'string' ? v.datetime : '',
         areaText: typeof v.areaText === 'string' ? v.areaText : '',
+        updatedAt: Number(v.updatedAt || 0),
       };
       // Avoid re-render while user is typing in this card (mobile keyboard drops on DOM replace)
-      if(!isFocusWithinTutorCard(id)) rerenderCard(id);
+      if(!isFocusWithinTutorCard(id)){
+        rebuildTutorOrder();
+        renderTutorsPreserveUI();
+      }
       if(currentTab === 'summary') renderSummary();
     });
 
     db.ref(pathAreas(id)).on('value', (snap)=>{
       const v = snap.val();
       shared.areasByTutor[id] = Array.isArray(v) ? v : [];
-      if(!isFocusWithinTutorCard(id)) rerenderCard(id);
+      if(!isFocusWithinTutorCard(id)){
+        rebuildTutorOrder();
+        renderTutorsPreserveUI();
+      }
     });
 
     db.ref(pathRes(id)).on('value', (snap)=>{
@@ -939,19 +953,38 @@ let memberNameEn = localStorage.getItem('af_member_en') || '';
 let currentTab = 'tutors';
 let tutorOrderIds = [];
 
-function shuffleInPlace(arr){
-  for(let i = arr.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+function normName(s){
+  return String(s || '').trim().toLowerCase();
 }
+function tutorHasInput(id){
+  const av = shared.availByTutor[id] || {};
+  const hasAvail = !!(String(av.online||'').trim() || String(av.datetime||'').trim() || String(av.areaText||'').trim());
+  const hasAreas = (getAreas(id) || []).length > 0;
+  return hasAvail || hasAreas;
+}
+function tutorUpdatedAt(id){
+  const av = shared.availByTutor[id] || {};
+  return Number(av.updatedAt || 0);
+}
+function rebuildTutorOrder(){
+  const base = tutors
+    .map(t => t.id)
+    .filter(id => id !== 'napkins')
+    .sort((a,b)=>{
+      const aHas = tutorHasInput(a);
+      const bHas = tutorHasInput(b);
+      if(aHas !== bHas) return aHas ? -1 : 1;
+      if(aHas && bHas){
+        const ta = tutorUpdatedAt(a);
+        const tb = tutorUpdatedAt(b);
+        if(ta !== tb) return tb - ta; // most recently updated first
+      }
+      const aName = normName((tutors.find(t=>t.id===a)||{}).name);
+      const bName = normName((tutors.find(t=>t.id===b)||{}).name);
+      return aName.localeCompare(bName, 'en', {sensitivity:'base'});
+    });
 
-function buildTutorOrder(){
-  const allIds = tutors.map(t => t.id);
-  const idsNoNap = allIds.filter(id => id !== 'napkins');
-  shuffleInPlace(idsNoNap);
-  tutorOrderIds = (role === 'tutor') ? ['napkins', ...idsNoNap] : idsNoNap;
+  tutorOrderIds = (role === 'tutor') ? ['napkins', ...base] : base;
 }
 
 function t(){ return T[lang] || T['ko']; }
@@ -1029,8 +1062,8 @@ function goToIntro(){
 
 function goToTutors(){
   document.getElementById('topbar-user').textContent = t().userLabel(memberLabel());
-  buildTutorOrder(); // reshuffle on each entry
   ensureSharedListeners();
+  rebuildTutorOrder(); // initial: alphabetical (then bumps filled tutors)
   renderTutors();
   showPage('page-tutors');
   // members should not see summary tab
@@ -1161,7 +1194,7 @@ function tutorPhotoSrc(tutor){
 }
 
 function visibleTutors(){
-  if(!tutorOrderIds.length) buildTutorOrder();
+  if(!tutorOrderIds.length) rebuildTutorOrder();
   const byId = Object.fromEntries(tutors.map(t => [t.id, t]));
   return tutorOrderIds.map(id => byId[id]).filter(Boolean);
 }
@@ -1222,6 +1255,7 @@ function buildCard(tutor, open=false){
   const avatarHtml = photoSrc ? `<img src="${photoSrc}" alt="${tutor.name}"/>` : initials;
   const areas = getAreas(tutor.id);
   const expandLabel = open ? (lang==='en' ? 'Close' : '닫기') : (lang==='en' ? 'Open' : '열기');
+  const hasInput = tutorHasInput(tutor.id);
 
   const bioText = String(tutor.bio||'').trim();
   const bioHtml = bioText ? `<div class="tutor-bio">${bioText}</div>` : '';
@@ -1238,11 +1272,11 @@ function buildCard(tutor, open=false){
   `).join('');
 
   return `
-  <div class="tutor-card${open?' open':''}" id="card_${tutor.id}">
+  <div class="tutor-card${open?' open':''}${hasInput?' has-input':''}" id="card_${tutor.id}">
     <div class="tutor-card-header" onclick="toggleCard('${tutor.id}')">
       <div class="tutor-avatar">${avatarHtml}</div>
       <div class="tutor-meta">
-        <div class="tutor-name">${nameLabel}</div>
+        <div class="tutor-name tutor-name-row"><span class="tutor-status-dot" aria-hidden="true"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nameLabel}</span></div>
         <div class="tutor-tags">${tutor.tags.map(tg=>`<span class="tag">${tg}</span>`).join('')}</div>
         ${bioHtml}
       </div>
@@ -1294,6 +1328,17 @@ function renderTutors(){
   const list = visibleTutors();
   grid.innerHTML = list.map(tu=>buildCard(tu)).join('');
   list.forEach(tu=>bindCard(tu.id));
+}
+
+function renderTutorsPreserveUI(){
+  const grid = document.getElementById('tutorList');
+  if(!grid) return;
+  const scrollTop = grid.scrollTop;
+  const openIds = new Set(Array.from(grid.querySelectorAll('.tutor-card.open')).map(el => (el.id||'').replace(/^card_/,'')));
+  const list = visibleTutors();
+  grid.innerHTML = list.map(tu=>buildCard(tu, openIds.has(tu.id))).join('');
+  list.forEach(tu=>bindCard(tu.id));
+  grid.scrollTop = scrollTop;
 }
 
 function renderSummary(){
