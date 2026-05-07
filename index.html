@@ -332,6 +332,11 @@ body{
 .memo-box.res-box{min-height:72px;}
 .memo-box.res-input{min-height:auto;height:44px;}
 .memo-box.av-dt{min-height:88px;}
+.memo-box.grow{
+  height:auto;
+  min-height:44px;
+  overflow:hidden;
+}
 .res-field-label{font-size:12px;color:var(--ink2);margin:10px 0 6px;font-weight:600;}
 
 .seoul-map-wrap{
@@ -1180,6 +1185,19 @@ function bindCard(id){
   const online = document.getElementById('av_online_'+id);
   const dt = document.getElementById('av_dt_'+id);
   const area = document.getElementById('av_area_'+id);
+  const autoGrow = (el)=>{
+    if(!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  // keep long text readable for both tutor + member views
+  if(area && area.tagName === 'TEXTAREA'){
+    const grow = ()=>autoGrow(area);
+    grow();
+    area.addEventListener('input', grow);
+  }
+
   if(role === 'tutor'){
     if(online) online.addEventListener('input', ()=>saveTutorAvail(id));
     if(dt) dt.addEventListener('input', ()=>saveTutorAvail(id));
@@ -1243,7 +1261,7 @@ function buildCard(tutor, open=false){
       <div class="res-field-label">*Available Date & Time</div>
       <textarea class="memo-box time-box av-dt" id="av_dt_${tutor.id}" placeholder="Enter available date & time" ${role==='tutor'?'':'readonly'}>${getTutorAvailDateTime(tutor.id)}</textarea>
       <div class="res-field-label">*Available Area (based on subway access)</div>
-      <input class="memo-box res-input" id="av_area_${tutor.id}" type="text" placeholder="e.g. Hongdae, Gangnam" value="${getTutorAvailArea(tutor.id)}" ${role==='tutor'?'':'readonly'}/>
+      <textarea class="memo-box grow" id="av_area_${tutor.id}" placeholder="e.g. Itaewon, HBC, Gangnam, Hongdae" ${role==='tutor'?'':'readonly'}>${getTutorAvailArea(tutor.id)}</textarea>
 
       <div class="section-label">${tx.sectionRes}</div>
       <div class="res-count">${lang==='ko'?`예약 <span>${res.length}</span>/${MAX_RESERVATIONS_PER_TUTOR}`:`<span>${res.length}</span>/${MAX_RESERVATIONS_PER_TUTOR} reserved`}</div>
