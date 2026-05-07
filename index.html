@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=480, initial-scale=1.0, user-scalable=yes"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
 <title>Affair Tutor Matching</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -22,7 +22,7 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html,body{height:100%;background:var(--bg);}
+html,body{height:100%;background:var(--bg);overflow-x:auto;}
 
 body{
   font-family:'Malgun Gothic','맑은 고딕','Segoe UI','Segoe UI Emoji','Segoe UI Symbol',-apple-system,BlinkMacSystemFont,'Apple Color Emoji','Noto Color Emoji','Helvetica Neue',sans-serif;
@@ -31,6 +31,9 @@ body{
   max-width:480px;
   margin:0 auto;
 }
+
+/* Keep layout from squishing on very small screens (allow horizontal scroll / pinch-zoom instead) */
+.page{min-width:480px;}
 
 /* ── PAGES ── */
 .page{display:none;min-height:100vh;flex-direction:column;}
