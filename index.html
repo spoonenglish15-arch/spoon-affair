@@ -322,7 +322,12 @@ body{
   font-size:12px;
   font-weight:700;
   color:var(--ink2);
-  flex-shrink:0;
+  align-self:center;
+  width:fit-content;
+  padding:6px 12px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--bg);
 }
 .tutor-card.open .expand-icon{color:var(--ink);}
 
@@ -1300,7 +1305,6 @@ function buildCard(tutor, open=false){
           <span class="tutor-status-dot" aria-hidden="true"></span>
           <span class="tutor-name-text">${nameLabel}</span>
         </div>
-        <div class="expand-icon">${expandLabel}</div>
       </div>
       <div class="tutor-header-bottom">
         <div class="tutor-avatar">${avatarHtml}</div>
@@ -1309,6 +1313,7 @@ function buildCard(tutor, open=false){
           ${bioHtml}
         </div>
       </div>
+      <div class="expand-icon">${expandLabel}</div>
     </div>
     <div class="tutor-body">
       <div class="section-label">Available Area</div>
