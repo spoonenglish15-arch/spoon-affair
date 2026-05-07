@@ -22,7 +22,13 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-html,body{height:100%;background:var(--bg);overflow-x:auto;}
+html,body{
+  height:100%;
+  background:var(--bg);
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
 
 body{
   font-family:'Malgun Gothic','맑은 고딕','Segoe UI','Segoe UI Emoji','Segoe UI Symbol',-apple-system,BlinkMacSystemFont,'Apple Color Emoji','Noto Color Emoji','Helvetica Neue',sans-serif;
@@ -31,9 +37,23 @@ body{
   max-width:480px;
   margin:0 auto;
 }
+.page{min-width:0;}
 
-/* Keep layout from squishing on very small screens (allow horizontal scroll / pinch-zoom instead) */
-.page{min-width:480px;}
+/* Responsive tweaks: prevent “squished” tutor cards on small screens */
+@media (max-width: 420px){
+  body{max-width:100%;}
+  .tutor-list{padding:14px 14px 36px;}
+  .tutor-card-header{padding:18px 14px;gap:10px;}
+  .tutor-header-bottom{gap:12px;}
+  .tutor-avatar{width:92px;height:106px;}
+  .tutor-name{font-size:15px;}
+  .expand-icon{font-size:10.5px;padding:3px 9px;}
+}
+
+@media (max-width: 360px){
+  .tutor-avatar{width:84px;height:98px;}
+  .tutor-name{font-size:14.5px;}
+}
 
 /* ── PAGES ── */
 .page{display:none;min-height:100vh;flex-direction:column;}
