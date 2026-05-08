@@ -162,6 +162,36 @@ body{
 }
 .underline-input::placeholder{color:var(--ink3);}
 
+/* ── MEMBER: 튜터 선택 (이름 입력 직후) ── */
+.tutor-pick-btns{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:8px;}
+
+/* ── MEMBER: 튜터별 휴가 안내 ── */
+#page-member-vacation{padding:0;justify-content:center;}
+.vacay-inner{max-width:100%;}
+.vacay-notice{
+  text-align:center;
+  margin-bottom:36px;
+  padding:8px 0;
+}
+.vacay-line{margin:0 auto 18px;max-width:22em;line-height:1.35;}
+.vacay-line:last-child{margin-bottom:0;}
+.vacay-line--lead{
+  font-size:clamp(22px,5.2vw,28px);
+  font-weight:800;
+  letter-spacing:-0.03em;
+}
+.vacay-line--dates{
+  font-size:clamp(26px,6.5vw,36px);
+  font-weight:900;
+  letter-spacing:-0.04em;
+  color:var(--ink);
+}
+.vacay-line--sub{
+  font-size:clamp(20px,4.8vw,26px);
+  font-weight:700;
+  letter-spacing:-0.02em;
+}
+
 /* ── INTRO PAGE ── */
 #page-intro{padding:40px 24px;justify-content:center;}
 .intro-badge{
@@ -395,6 +425,24 @@ body{
   white-space:pre-wrap;
   word-break:break-word;
 }
+/* 기입 칸·목록 스크롤바: OS 기본색이 너무 연해 보이지 않는 문제 */
+.tutor-list,
+.memo-box{
+  scrollbar-width:thin;
+  scrollbar-color:#6b7280 #e5e3de;
+}
+.tutor-list::-webkit-scrollbar,
+.memo-box::-webkit-scrollbar{width:10px;height:10px;}
+.tutor-list::-webkit-scrollbar-track,
+.memo-box::-webkit-scrollbar-track{background:#e5e3de;border-radius:8px;}
+.tutor-list::-webkit-scrollbar-thumb,
+.memo-box::-webkit-scrollbar-thumb{
+  background:#6b7280;
+  border-radius:8px;
+  border:2px solid #e5e3de;
+}
+.tutor-list::-webkit-scrollbar-thumb:hover,
+.memo-box::-webkit-scrollbar-thumb:hover{background:#4b5563;}
 .res-field-label{font-size:12px;color:var(--ink2);margin:10px 0 6px;font-weight:600;}
 
 .seoul-map-wrap{
@@ -576,7 +624,29 @@ body{
     <div class="page-desc" id="name-desc">한글 이름을 입력한 뒤 다음으로 이동합니다.</div>
     <input class="underline-input" id="memberNameKo" type="text" placeholder="예: 김유나" autocomplete="off"/>
     <input class="underline-input" id="memberNameEn" type="text" placeholder="e.g. Jamie" autocomplete="off" style="margin-top:8px;"/>
-    <button class="btn-primary" id="name-btn" onclick="goToIntro()">다음 →</button>
+    <button class="btn-primary" id="name-btn" onclick="goToMemberTutorPick()">다음 →</button>
+  </div>
+</section>
+
+<!-- PAGE 1b: 회원 — 담당 튜터 선택 -->
+<section id="page-member-tutor" class="page">
+  <div class="name-inner">
+    <div class="page-eyebrow">Affair Tutor Matching</div>
+    <div class="page-title" id="member-tutor-title">당신의 튜터는 누구입니까?</div>
+    <div class="tutor-pick-btns">
+      <button type="button" class="lang-btn" onclick="pickMemberTutor('Harry')">Harry</button>
+      <button type="button" class="lang-btn" onclick="pickMemberTutor('Jacob')">Jacob</button>
+      <button type="button" class="lang-btn" onclick="pickMemberTutor('Nneka')">Nneka</button>
+      <button type="button" class="lang-btn" onclick="pickMemberTutor('Sean Levitas')">Sean Levitas</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 1c: 회원 — 선택 튜터 휴가 안내 (튜터마다 문구·기간 다름) -->
+<section id="page-member-vacation" class="page">
+  <div class="name-inner vacay-inner">
+    <div class="vacay-notice" id="vacay-notice" aria-live="polite"></div>
+    <button type="button" class="btn-primary" id="vacay-next-btn" onclick="proceedFromVacationNotice()">다음으로 넘어가기</button>
   </div>
 </section>
 
@@ -622,6 +692,8 @@ const T = {
     namePlaceholderKo: '예: 김유나',
     namePlaceholderEn: 'e.g. Jamie',
     nameBtn: '다음 →',
+    memberTutorTitle: '당신의 튜터는 누구입니까?',
+    vacayNext: '다음으로 넘어가기',
     introBadge: '',
     introTitle: '어페어를\n할 준비가\n되셨습니까?',
     introDesc: '1. 어페어 할 튜터 고르기\n2. 튜터 정보 펼치기\n3. 가능지역 & 시간 확인하기\n4. 희망장소(온라인), 희망시간 입력하기\n5. 예약하기 누르기',
@@ -645,6 +717,8 @@ const T = {
     namePlaceholderKo: 'e.g. Yuna Kim (Korean)',
     namePlaceholderEn: 'e.g. Jamie',
     nameBtn: 'Next →',
+    memberTutorTitle: 'Who is your tutor?',
+    vacayNext: 'Continue →',
     introBadge: 'Info',
     introTitle: 'Ready for\nyour Affair?',
     introDesc: 'Brief description goes here.',
@@ -999,6 +1073,7 @@ let lang = localStorage.getItem('af_lang') || '';
 let role = localStorage.getItem('af_role') || '';
 let memberNameKo = localStorage.getItem('af_member_ko') || '';
 let memberNameEn = localStorage.getItem('af_member_en') || '';
+let memberPickedTutor = localStorage.getItem('af_member_tutor_pick') || '';
 let currentTab = 'tutors';
 let tutorOrderIds = [];
 
@@ -1071,6 +1146,7 @@ function chooseRole(nextRole, nextLang){
     memberNameEn = '';
     localStorage.removeItem('af_member_ko');
     localStorage.removeItem('af_member_en');
+    localStorage.removeItem('af_member_tutor_pick');
     goToTutors();
     return;
   }
@@ -1087,15 +1163,19 @@ function applyLang(){
   document.getElementById('memberNameKo').placeholder = tx.namePlaceholderKo;
   document.getElementById('memberNameEn').placeholder = tx.namePlaceholderEn;
   document.getElementById('name-btn').textContent = tx.nameBtn;
+  const mt = document.getElementById('member-tutor-title');
+  if(mt) mt.textContent = tx.memberTutorTitle;
   document.getElementById('intro-badge').textContent = tx.introBadge;
   document.getElementById('intro-title').innerHTML = tx.introTitle.replace(/\n/g,'<br>');
   document.getElementById('intro-desc').textContent = tx.introDesc;
   document.getElementById('intro-btn').textContent = tx.introBtn;
   document.getElementById('tab-tutors').textContent = tx.tabTutors;
   document.getElementById('tab-summary').textContent = tx.tabSummary;
+  const vn = document.getElementById('vacay-next-btn');
+  if(vn) vn.textContent = tx.vacayNext;
 }
 
-function goToIntro(){
+function goToMemberTutorPick(){
   const ko = document.getElementById('memberNameKo').value.trim();
   const en = document.getElementById('memberNameEn').value.trim();
   if(!ko || !en){
@@ -1106,6 +1186,47 @@ function goToIntro(){
   memberNameEn = en;
   localStorage.setItem('af_member_ko', memberNameKo);
   localStorage.setItem('af_member_en', memberNameEn);
+  showPage('page-member-tutor');
+}
+
+/** 회원 플로우: 담당 튜터별 휴가 기간 (표시용) */
+const MEMBER_TUTOR_VACAY_RANGE = {
+  Harry: { ko: '5월20일 - 6월2일', en: 'May 20 – June 2' },
+  Jacob: { ko: '5월12일 - 5월23일', en: 'May 12 – May 23' },
+  Nneka: { ko: '5월13일 - 6월24일', en: 'May 13 – June 24' },
+  'Sean Levitas': { ko: '5월10일 - 5월27일', en: 'May 10 – May 27' },
+};
+
+function renderVacationNotice(tutorName){
+  const row = MEMBER_TUTOR_VACAY_RANGE[tutorName];
+  const box = document.getElementById('vacay-notice');
+  if(!row || !box) return;
+  const L = lang === 'en' ? 'en' : 'ko';
+  const range = row[L];
+  if(L === 'ko'){
+    box.innerHTML = `
+      <p class="vacay-line vacay-line--lead">${tutorName} 의 휴가는</p>
+      <p class="vacay-line vacay-line--dates">'${range}'</p>
+      <p class="vacay-line vacay-line--sub">위 기간 안에서</p>
+      <p class="vacay-line vacay-line--sub">일정을 잡아 주세요!</p>`;
+  }else{
+    box.innerHTML = `
+      <p class="vacay-line vacay-line--lead">${tutorName}'s vacation:</p>
+      <p class="vacay-line vacay-line--dates">'${range}'</p>
+      <p class="vacay-line vacay-line--sub">Please schedule</p>
+      <p class="vacay-line vacay-line--sub">within this period!</p>`;
+  }
+}
+
+function pickMemberTutor(name){
+  if(!MEMBER_TUTOR_VACAY_RANGE[name]) return;
+  memberPickedTutor = name;
+  localStorage.setItem('af_member_tutor_pick', memberPickedTutor);
+  renderVacationNotice(name);
+  showPage('page-member-vacation');
+}
+
+function proceedFromVacationNotice(){
   showPage('page-intro');
 }
 
