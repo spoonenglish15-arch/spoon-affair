@@ -1427,7 +1427,12 @@ function tutorPhotoSrc(tutor){
 function visibleTutors(){
   if(!tutorOrderIds.length) rebuildTutorOrder();
   const byId = Object.fromEntries(tutors.map(t => [t.id, t]));
-  return tutorOrderIds.map(id => byId[id]).filter(Boolean);
+  // Hide specific tutors from both member+tutor views.
+  const hiddenTutorIds = new Set(['luisa']);
+  return tutorOrderIds
+    .filter(id => !hiddenTutorIds.has(id))
+    .map(id => byId[id])
+    .filter(Boolean);
 }
 
 function toggleCard(id){
