@@ -418,6 +418,10 @@ body{
 .memo-box.res-box{min-height:72px;}
 .memo-box.res-input{min-height:auto;height:44px;}
 .memo-box.av-dt{min-height:88px;}
+.memo-box.autogrow{
+  overflow:hidden; /* tutors: expand downward instead of scrolling */
+  resize:none;
+}
 .memo-box.grow{
   height:auto;
   min-height:96px;
@@ -1467,8 +1471,26 @@ function bindCard(id){
 
   if(role === 'tutor'){
     if(online) online.addEventListener('input', ()=>saveTutorAvail(id));
-    if(dt) dt.addEventListener('input', ()=>saveTutorAvail(id));
-    if(area) area.addEventListener('input', ()=>saveTutorAvail(id));
+    if(dt){
+      autoGrow(dt);
+      requestAnimationFrame(()=>autoGrow(dt));
+      dt.addEventListener('input', ()=>{
+        autoGrow(dt);
+        saveTutorAvail(id);
+      });
+      dt.addEventListener('change', ()=>autoGrow(dt));
+      dt.addEventListener('focus', ()=>requestAnimationFrame(()=>autoGrow(dt)));
+    }
+    if(area){
+      autoGrow(area);
+      requestAnimationFrame(()=>autoGrow(area));
+      area.addEventListener('input', ()=>{
+        autoGrow(area);
+        saveTutorAvail(id);
+      });
+      area.addEventListener('change', ()=>autoGrow(area));
+      area.addEventListener('focus', ()=>requestAnimationFrame(()=>autoGrow(area)));
+    }
   }
 }
 
@@ -1534,9 +1556,9 @@ function buildCard(tutor, open=false){
       <div class="res-field-label">*Online Available (O/X)</div>
       <input class="memo-box res-input" id="av_online_${tutor.id}" type="text" placeholder="O or X" value="${getTutorAvailOnline(tutor.id)}" ${role==='tutor'?'':'readonly'}/>
       <div class="res-field-label">*Available Date & Time</div>
-      <textarea class="memo-box time-box av-dt" id="av_dt_${tutor.id}" placeholder="Enter available date & time" ${role==='tutor'?'':'readonly'}>${getTutorAvailDateTime(tutor.id)}</textarea>
+      <textarea class="memo-box time-box av-dt autogrow" id="av_dt_${tutor.id}" placeholder="Enter available date & time" ${role==='tutor'?'':'readonly'}>${getTutorAvailDateTime(tutor.id)}</textarea>
       <div class="res-field-label">*Available Area (based on subway access)</div>
-      <textarea class="memo-box time-box av-dt" id="av_area_${tutor.id}" placeholder="e.g. Itaewon, HBC, Gangnam, Hongdae" ${role==='tutor'?'':'readonly'}>${getTutorAvailArea(tutor.id)}</textarea>
+      <textarea class="memo-box time-box av-dt autogrow" id="av_area_${tutor.id}" placeholder="e.g. Itaewon, HBC, Gangnam, Hongdae" ${role==='tutor'?'':'readonly'}>${getTutorAvailArea(tutor.id)}</textarea>
 
       <div class="section-label">${tx.sectionRes}</div>
       <div class="res-count">${lang==='ko'?`예약 <span>${res.length}</span>/${MAX_RESERVATIONS_PER_TUTOR}`:`<span>${res.length}</span>/${MAX_RESERVATIONS_PER_TUTOR} reserved`}</div>
