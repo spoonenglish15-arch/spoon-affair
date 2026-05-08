@@ -1124,11 +1124,68 @@ function showPage(id){
   if(el){ el.classList.add('active'); }
 }
 
+// ── SPA navigation: enable browser back/forward ──
+const NAV_PAGES = new Set([
+  'page-lang',
+  'page-name',
+  'page-member-tutor',
+  'page-member-vacation',
+  'page-intro',
+  'page-tutors',
+]);
+
+function currentPageId(){
+  return document.querySelector('.page.active')?.id || '';
+}
+
+function routeTo(id, { fromPop = false } = {}){
+  if(!NAV_PAGES.has(id)) return;
+  showPage(id);
+
+  // re-hydrate dynamic pages on back/forward
+  if(id === 'page-member-vacation' && memberPickedTutor){
+    renderVacationNotice(memberPickedTutor);
+  }
+  if(id === 'page-tutors'){
+    // If the user came here via back/forward, ensure UI is ready.
+    // (No-op if already initialized.)
+    document.getElementById('topbar-user').textContent = t().userLabel(memberLabel());
+    ensureSharedListeners();
+    rebuildTutorOrder();
+    renderTutors();
+    const summaryTab = document.getElementById('tab-summary');
+    if(summaryTab) summaryTab.style.display = (role === 'tutor') ? '' : 'none';
+    showTab(currentTab || 'tutors');
+  }
+}
+
+function navigateTo(id, { replace = false } = {}){
+  routeTo(id);
+  const state = { page: id };
+  try{
+    if(replace) history.replaceState(state, '', '#'+id);
+    else history.pushState(state, '', '#'+id);
+  }catch(_e){
+    // ignore (e.g., file:// restrictions)
+  }
+}
+
+window.addEventListener('popstate', (ev)=>{
+  const page = ev?.state?.page;
+  if(page){
+    routeTo(page, { fromPop: true });
+    return;
+  }
+  // fallback: hash-based
+  const hashPage = (location.hash || '').replace('#','');
+  if(hashPage && NAV_PAGES.has(hashPage)) routeTo(hashPage, { fromPop: true });
+});
+
 function setLang(l){
   lang = l;
   localStorage.setItem('af_lang', l);
   applyLang();
-  showPage('page-name');
+  navigateTo('page-name');
   if(memberNameKo) document.getElementById('memberNameKo').value = memberNameKo;
   if(memberNameEn) document.getElementById('memberNameEn').value = memberNameEn;
 }
@@ -1151,7 +1208,7 @@ function chooseRole(nextRole, nextLang){
     return;
   }
 
-  showPage('page-name');
+  navigateTo('page-name');
   if(memberNameKo) document.getElementById('memberNameKo').value = memberNameKo;
   if(memberNameEn) document.getElementById('memberNameEn').value = memberNameEn;
 }
@@ -1186,7 +1243,7 @@ function goToMemberTutorPick(){
   memberNameEn = en;
   localStorage.setItem('af_member_ko', memberNameKo);
   localStorage.setItem('af_member_en', memberNameEn);
-  showPage('page-member-tutor');
+  navigateTo('page-member-tutor');
 }
 
 /** 회원 플로우: 담당 튜터별 휴가 기간 (표시용) */
@@ -1223,11 +1280,11 @@ function pickMemberTutor(name){
   memberPickedTutor = name;
   localStorage.setItem('af_member_tutor_pick', memberPickedTutor);
   renderVacationNotice(name);
-  showPage('page-member-vacation');
+  navigateTo('page-member-vacation');
 }
 
 function proceedFromVacationNotice(){
-  showPage('page-intro');
+  navigateTo('page-intro');
 }
 
 function goToTutors(){
@@ -1235,7 +1292,7 @@ function goToTutors(){
   ensureSharedListeners();
   rebuildTutorOrder(); // initial: alphabetical (then bumps filled tutors)
   renderTutors();
-  showPage('page-tutors');
+  navigateTo('page-tutors');
   // members should not see summary tab
   const summaryTab = document.getElementById('tab-summary');
   if(summaryTab) summaryTab.style.display = (role === 'tutor') ? '' : 'none';
@@ -1553,7 +1610,12 @@ function renderSummary(){
 }
 
 // init
-if(lang){ applyLang(); showPage('page-lang'); }
+if(lang){ applyLang(); }
+// Start at hash target if present, otherwise lang page.
+const bootHash = (location.hash || '').replace('#','');
+const bootPage = (bootHash && typeof bootHash === 'string') ? bootHash : 'page-lang';
+routeTo(NAV_PAGES.has(bootPage) ? bootPage : 'page-lang');
+try{ history.replaceState({page: NAV_PAGES.has(bootPage) ? bootPage : 'page-lang'}, '', '#'+(NAV_PAGES.has(bootPage) ? bootPage : 'page-lang')); }catch(_e){}
 </script>
 </body>
 </html>
