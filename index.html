@@ -942,7 +942,6 @@ const tutorDetailsById = {
 
 // 튜터 추가/변경은 아래 리스트(id/name)만 수정하면 됩니다.
 const tutorSeed = [
-  {id:'napkins', name:'Napkins : "Follow me"'},
   {id:'charles', name:'Charles'},
   {id:'jenna', name:'Jenna'},
   {id:'sofija', name:'Sofija'},
@@ -1122,7 +1121,6 @@ function tutorUpdatedAt(id){
 function rebuildTutorOrder(){
   const base = tutors
     .map(t => t.id)
-    .filter(id => id !== 'napkins')
     .sort((a,b)=>{
       const aHas = tutorHasInput(a);
       const bHas = tutorHasInput(b);
@@ -1137,7 +1135,7 @@ function rebuildTutorOrder(){
       return aName.localeCompare(bName, 'en', {sensitivity:'base'});
     });
 
-  tutorOrderIds = (role === 'tutor') ? ['napkins', ...base] : base;
+  tutorOrderIds = base;
 }
 
 function t(){ return T[lang] || T['ko']; }
@@ -1435,7 +1433,6 @@ const tutorPhotoFileById = {
   stephen: 'Stephen Molyneaux.jpg',
   themba: 'Themba.jpg',
   tristan: 'Tristan.jpg',
-  napkins: 'nap.png',
 };
 
 function tutorPhotoSrc(tutor){
