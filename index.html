@@ -1028,17 +1028,13 @@ function ensureSharedListeners(){
     return tag === 'INPUT' || tag === 'TEXTAREA';
   };
 
-  const scheduleTutorListRefresh = (tutorId) => {
-    setTimeout(()=>{
-      if(isTypingInTutorCard(tutorId)) return;
-      rebuildTutorOrder();
-      renderTutorsPreserveUI();
-    }, 0);
-  };
-
   const scheduleCardRefresh = (tutorId) => {
     setTimeout(()=>{
-      if(isTypingInTutorCard(tutorId)) return;
+      if(isTypingInTutorCard(tutorId)){
+        const card = document.getElementById('card_'+tutorId);
+        if(card) card.classList.toggle('has-input', tutorHasInput(tutorId));
+        return;
+      }
       rerenderCard(tutorId);
     }, 0);
   };
@@ -1056,16 +1052,14 @@ function ensureSharedListeners(){
       };
       // Defer: Firebase can call this synchronously during set(); immediate innerHTML
       // replaces map buttons before the mouse click finishes on desktop web.
-      scheduleTutorListRefresh(id);
+      scheduleCardRefresh(id);
       if(currentTab === 'summary') renderSummary();
     });
 
     db.ref(pathAreas(id)).on('value', (snap)=>{
       const v = snap.val();
       shared.areasByTutor[id] = Array.isArray(v) ? v : [];
-      // Map clicks: activeElement is often still a memo textarea in the same card.
-      // Old logic skipped re-render for any focus in the card → regions never looked "active".
-      scheduleTutorListRefresh(id);
+      scheduleCardRefresh(id);
     });
 
     db.ref(pathRes(id)).on('value', (snap)=>{
@@ -1114,28 +1108,14 @@ function tutorHasInput(id){
   const hasAreas = (getAreas(id) || []).length > 0;
   return hasAvail || hasAreas;
 }
-function tutorUpdatedAt(id){
-  const av = shared.availByTutor[id] || {};
-  return Number(av.updatedAt || 0);
-}
 function rebuildTutorOrder(){
-  const base = tutors
+  tutorOrderIds = tutors
     .map(t => t.id)
     .sort((a,b)=>{
-      const aHas = tutorHasInput(a);
-      const bHas = tutorHasInput(b);
-      if(aHas !== bHas) return aHas ? -1 : 1;
-      if(aHas && bHas){
-        const ta = tutorUpdatedAt(a);
-        const tb = tutorUpdatedAt(b);
-        if(ta !== tb) return tb - ta; // most recently updated first
-      }
       const aName = normName((tutors.find(t=>t.id===a)||{}).name);
       const bName = normName((tutors.find(t=>t.id===b)||{}).name);
       return aName.localeCompare(bName, 'en', {sensitivity:'base'});
     });
-
-  tutorOrderIds = base;
 }
 
 function t(){ return T[lang] || T['ko']; }
@@ -1480,8 +1460,8 @@ function bindCard(id){
   const area = document.getElementById('av_area_'+id);
   const autoGrow = (el)=>{
     if(!el) return;
-    // Make it reliably grow on mobile as content changes.
-    el.style.height = '0px';
+    // height:0은 레이아웃이 순간 붕괴하며 스크롤/포커스가 튀는 경우가 있어 auto 기준으로만 조정
+    el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
   };
 
@@ -1611,17 +1591,6 @@ function renderTutors(){
   const list = visibleTutors();
   grid.innerHTML = list.map(tu=>buildCard(tu)).join('');
   list.forEach(tu=>bindCard(tu.id));
-}
-
-function renderTutorsPreserveUI(){
-  const grid = document.getElementById('tutorList');
-  if(!grid) return;
-  const scrollTop = grid.scrollTop;
-  const openIds = new Set(Array.from(grid.querySelectorAll('.tutor-card.open')).map(el => (el.id||'').replace(/^card_/,'')));
-  const list = visibleTutors();
-  grid.innerHTML = list.map(tu=>buildCard(tu, openIds.has(tu.id))).join('');
-  list.forEach(tu=>bindCard(tu.id));
-  grid.scrollTop = scrollTop;
 }
 
 function renderSummary(){
