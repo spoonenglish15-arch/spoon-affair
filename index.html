@@ -38,7 +38,6 @@ body{
   margin:0 auto;
 }
 .page{min-width:0;}
-
 /* Responsive tweaks: prevent “squished” tutor cards on small screens */
 @media (max-width: 420px){
   body{max-width:100%;}
@@ -1430,7 +1429,16 @@ function visibleTutors(){
   if(!tutorOrderIds.length) rebuildTutorOrder();
   const byId = Object.fromEntries(tutors.map(t => [t.id, t]));
   // Hide specific tutors from both member+tutor views.
-  const hiddenTutorIds = new Set(['luisa']);
+  const hiddenTutorIds = new Set([
+    'luisa',
+    'aaron',
+    'charles',
+    'christkim',
+    'joseph',
+    'lindsay',
+    'rose',
+    'stephen',
+  ]);
   return tutorOrderIds
     .filter(id => !hiddenTutorIds.has(id))
     .map(id => byId[id])
