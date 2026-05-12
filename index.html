@@ -607,6 +607,92 @@ body{
 }
 .match-item:last-child{border-bottom:none;}
 .match-item strong{color:var(--ink);}
+
+/* ── SUMMARY: 엑셀형 표 보기 ── */
+.summary-view-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+.summary-view-label{
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink2);
+}
+.summary-view-btns{
+  display:flex;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--surface);
+}
+.summary-view-btn{
+  border:none;
+  background:transparent;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:600;
+  font-family:inherit;
+  color:var(--ink2);
+  cursor:pointer;
+  transition:background .12s ease,color .12s ease;
+}
+.summary-view-btn + .summary-view-btn{border-left:1px solid var(--border);}
+.summary-view-btn.active{
+  background:#e8f0fe;
+  color:var(--blue);
+}
+.summary-table-scroll{
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  margin:0 12px 40px;
+  border:1px solid #c5c5c5;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 1px 0 rgba(0,0,0,.04) inset;
+}
+.summary-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  min-width:640px;
+}
+.summary-table th,
+.summary-table td{
+  border:1px solid #d0d0d0;
+  padding:8px 10px;
+  text-align:left;
+  vertical-align:top;
+  line-height:1.45;
+}
+.summary-table thead th{
+  background:linear-gradient(180deg,#f3f3f3 0%,#e8e8e8 100%);
+  font-weight:700;
+  color:var(--ink);
+  position:sticky;
+  top:0;
+  z-index:1;
+  box-shadow:0 1px 0 #b0b0b0;
+  white-space:nowrap;
+}
+.summary-table tbody tr:nth-child(even){background:#fafafa;}
+.summary-table tbody tr:hover{background:#f0f7ff;}
+.summary-table .cell-num{
+  text-align:center;
+  color:var(--ink2);
+  width:2.2em;
+  background:#f6f6f6;
+  font-variant-numeric:tabular-nums;
+}
+.summary-table .cell-memo{
+  white-space:pre-wrap;
+  word-break:break-word;
+  max-width:280px;
+  color:var(--ink2);
+}
 </style>
 </head>
 <body>
@@ -689,6 +775,13 @@ body{
   <div id="summaryWrap" style="display:none;">
     <div class="summary-search-wrap">
       <input id="summarySearch" class="summary-search" type="text" placeholder="회원/튜터 이름 검색 (예: 김유나 또는 Jenna)"/>
+      <div class="summary-view-bar" id="summaryViewBar" aria-label="Matches view mode">
+        <span class="summary-view-label" id="summaryViewLabel">보기</span>
+        <div class="summary-view-btns">
+          <button type="button" class="summary-view-btn" id="summaryViewCards" onclick="setSummaryViewMode('cards')">카드</button>
+          <button type="button" class="summary-view-btn" id="summaryViewSheet" onclick="setSummaryViewMode('sheet')">표</button>
+        </div>
+      </div>
     </div>
     <div class="summary-list" id="summaryList"></div>
   </div>
@@ -723,6 +816,18 @@ const T = {
     emptyMatch: '매칭 없음',
     matchBadge: (n) => `${n}명`,
     userLabel: (n) => `${n} 님`,
+    summarySearchPh: '회원/튜터 이름 검색 (예: 김유나 또는 Jenna)',
+    summaryViewLabel: '보기',
+    summaryViewCards: '카드',
+    summaryViewSheet: '표 (엑셀)',
+    summaryColNo: '#',
+    summaryColTutor: '튜터',
+    summaryColMember: '회원',
+    summaryColPlace: '희망장소',
+    summaryColDate: '희망날짜',
+    summaryColTime: '희망시간',
+    summaryColMemo: '전체 메모',
+    summaryNoResults: '검색 결과 없음',
   },
   en: {
     nameTitle: 'Enter your name',
@@ -748,6 +853,18 @@ const T = {
     emptyMatch: 'No matches yet',
     matchBadge: (n) => `${n} members`,
     userLabel: (n) => n,
+    summarySearchPh: 'Search member or tutor name',
+    summaryViewLabel: 'View',
+    summaryViewCards: 'Cards',
+    summaryViewSheet: 'Sheet',
+    summaryColNo: '#',
+    summaryColTutor: 'Tutor',
+    summaryColMember: 'Member',
+    summaryColPlace: 'Place',
+    summaryColDate: 'Date',
+    summaryColTime: 'Time',
+    summaryColMemo: 'Full note',
+    summaryNoResults: 'No results',
   }
 };
 
@@ -1096,6 +1213,7 @@ let memberNameKo = localStorage.getItem('af_member_ko') || '';
 let memberNameEn = localStorage.getItem('af_member_en') || '';
 let memberPickedTutor = localStorage.getItem('af_member_tutor_pick') || '';
 let currentTab = 'tutors';
+let summaryViewMode = localStorage.getItem('af_summary_view') || 'sheet';
 let tutorOrderIds = [];
 
 function normName(s){
@@ -1234,6 +1352,15 @@ function applyLang(){
   document.getElementById('intro-btn').textContent = tx.introBtn;
   document.getElementById('tab-tutors').textContent = tx.tabTutors;
   document.getElementById('tab-summary').textContent = tx.tabSummary;
+  const ss = document.getElementById('summarySearch');
+  if(ss) ss.placeholder = tx.summarySearchPh;
+  const svl = document.getElementById('summaryViewLabel');
+  if(svl) svl.textContent = tx.summaryViewLabel;
+  const svc = document.getElementById('summaryViewCards');
+  if(svc) svc.textContent = tx.summaryViewCards;
+  const svs = document.getElementById('summaryViewSheet');
+  if(svs) svs.textContent = tx.summaryViewSheet;
+  syncSummaryViewButtons();
   const vn = document.getElementById('vacay-next-btn');
   if(vn) vn.textContent = tx.vacayNext;
 }
@@ -1317,6 +1444,7 @@ function showTab(tab){
       s.addEventListener('input', ()=>renderSummary());
       s.dataset.bound = '1';
     }
+    syncSummaryViewButtons();
     renderSummary();
   }
   const wrap = document.getElementById('summaryWrap');
@@ -1601,26 +1729,125 @@ function renderTutors(){
   list.forEach(tu=>bindCard(tu.id));
 }
 
+function escapeHtml(s){
+  return String(s ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function tutorPlainLabel(tutor){
+  const c = String(tutor.country || '').trim();
+  return c ? `${tutor.name} (${c})` : String(tutor.name || '');
+}
+
+/** 예약 메모에서 희망장소/날짜/시간 줄 단위로 추출 (회원 예약 저장 형식과 동일) */
+function parseResMemo(memo){
+  const raw = String(memo || '').trim();
+  const place = (raw.match(/희망장소\(온라인\):\s*([^\n]*)/) || [])[1];
+  const date = (raw.match(/희망날짜:\s*([^\n]*)/) || [])[1];
+  const time = (raw.match(/희망시간:\s*([^\n]*)/) || [])[1];
+  return {
+    place: (place || '').trim(),
+    date: (date || '').trim(),
+    time: (time || '').trim(),
+    raw,
+  };
+}
+
+function syncSummaryViewButtons(){
+  const c = document.getElementById('summaryViewCards');
+  const sh = document.getElementById('summaryViewSheet');
+  if(!c || !sh) return;
+  c.classList.toggle('active', summaryViewMode === 'cards');
+  sh.classList.toggle('active', summaryViewMode === 'sheet');
+}
+
+function setSummaryViewMode(mode){
+  if(mode !== 'cards' && mode !== 'sheet') return;
+  summaryViewMode = mode;
+  try{ localStorage.setItem('af_summary_view', mode); }catch(_e){}
+  syncSummaryViewButtons();
+  renderSummary();
+}
+
+/** Matches 탭: 매칭(예약) 있는 튜터 먼저, 없는 튜터는 아래. 검색 시에는 화면에 나오는 행 수 기준. */
+function summaryTutorEntries(q){
+  const baseOrder = Object.fromEntries(visibleTutors().map((t, i) => [t.id, i]));
+  const out = [];
+  for(const tutor of visibleTutors()){
+    const resAll = getRes(tutor.id);
+    const tutorName = String(tutor.name || '').toLowerCase();
+    const matchTutor = q ? tutorName.includes(q) : true;
+    const resByMember = q ? resAll.filter(r => String(r.name || '').toLowerCase().includes(q)) : resAll;
+    const res = matchTutor ? resAll : resByMember;
+    if(q && !matchTutor && resByMember.length === 0) continue;
+    out.push({ tutor, res, baseOrder: baseOrder[tutor.id] ?? 0 });
+  }
+  out.sort((a, b)=>{
+    const aw = a.res.length > 0 ? 1 : 0;
+    const bw = b.res.length > 0 ? 1 : 0;
+    if(bw !== aw) return bw - aw;
+    return a.baseOrder - b.baseOrder;
+  });
+  return out;
+}
+
 function renderSummary(){
   const tx = t();
   const sl = document.getElementById('summaryList');
   const q = (document.getElementById('summarySearch')?.value || '').trim().toLowerCase();
 
-  const cards = visibleTutors().map(tutor=>{
-    const resAll = getRes(tutor.id);
-    const tutorName = String(tutor.name || '').toLowerCase();
-    const matchTutor = q ? tutorName.includes(q) : true;
-    const resByMember = q ? resAll.filter(r => String(r.name||'').toLowerCase().includes(q)) : resAll;
-    const res = matchTutor ? resAll : resByMember;
+  if(summaryViewMode === 'sheet'){
+    const rows = [];
+    for(const { tutor, res } of summaryTutorEntries(q)){
+      const tLabel = tutorPlainLabel(tutor);
+      for(const r of res){
+        const p = parseResMemo(r.memo);
+        rows.push({
+          tutor: tLabel,
+          member: String(r.name || ''),
+          place: p.place,
+          date: p.date,
+          time: p.time,
+          memo: p.raw,
+        });
+      }
+    }
+
+    if(!rows.length){
+      sl.innerHTML = `<div class="match-item" style="color:var(--ink3);padding:12px 0;">${escapeHtml(q ? tx.summaryNoResults : tx.emptyMatch)}</div>`;
+      return;
+    }
+
+    const head = `<tr>
+      <th>${escapeHtml(tx.summaryColNo)}</th>
+      <th>${escapeHtml(tx.summaryColTutor)}</th>
+      <th>${escapeHtml(tx.summaryColMember)}</th>
+      <th>${escapeHtml(tx.summaryColPlace)}</th>
+      <th>${escapeHtml(tx.summaryColDate)}</th>
+      <th>${escapeHtml(tx.summaryColTime)}</th>
+      <th>${escapeHtml(tx.summaryColMemo)}</th>
+    </tr>`;
+    const body = rows.map((row, i)=>`<tr>
+      <td class="cell-num">${i + 1}</td>
+      <td>${escapeHtml(row.tutor)}</td>
+      <td>${escapeHtml(row.member)}</td>
+      <td>${escapeHtml(row.place)}</td>
+      <td>${escapeHtml(row.date)}</td>
+      <td>${escapeHtml(row.time)}</td>
+      <td class="cell-memo">${escapeHtml(row.memo)}</td>
+    </tr>`).join('');
+    sl.innerHTML = `<div class="summary-table-scroll"><table class="summary-table" role="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    return;
+  }
+
+  const cards = summaryTutorEntries(q).map(({ tutor, res })=>{
     const nameLabel = `${tutor.name}${countrySuffix(tutor.country)}`;
     const items = res.length
       ? res.map(r=>`<div class="match-item"><strong>${nameLabel}</strong> ↔ <strong>${r.name}</strong><br>${String(r.memo||'').replace(/\n/g,'<br>')}</div>`).join('')
-      : `<div class="match-item" style="color:var(--ink3);">${q ? '검색 결과 없음' : tx.emptyMatch}</div>`;
-
-    // show this tutor card if:
-    // - query matches tutor name, OR
-    // - query matches at least one member reservation name
-    if(q && !matchTutor && resByMember.length === 0) return '';
+      : `<div class="match-item" style="color:var(--ink3);">${q ? escapeHtml(tx.summaryNoResults) : tx.emptyMatch}</div>`;
 
     return `
     <div class="summary-card">
@@ -1630,9 +1857,9 @@ function renderSummary(){
       </div>
       <div class="summary-body">${items}</div>
     </div>`;
-  }).filter(Boolean);
+  });
 
-  sl.innerHTML = cards.length ? cards.join('') : `<div class="match-item" style="color:var(--ink3);padding:12px 0;">검색 결과 없음</div>`;
+  sl.innerHTML = cards.length ? cards.join('') : `<div class="match-item" style="color:var(--ink3);padding:12px 0;">${escapeHtml(tx.summaryNoResults)}</div>`;
 }
 
 // init
